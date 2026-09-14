@@ -1,0 +1,71 @@
+<div data-role="page" class="page type-interior pluginConfigurationPage withTabs"
+     data-require="emby-input,emby-button,emby-checkbox"
+     data-controller="__plugin/Zelefin.js">
+    <div class="content-primary">
+        <div class="verticalSection">
+            <div class="sectionTitleContainer">
+                <h1 class="sectionTitle">Zelefin</h1>
+            </div>
+            <p>
+                Settings here apply to every Zelefin install signed in to this server.
+                Users do not have to type a Seerr URL or password on their phones.
+            </p>
+        </div>
+
+        <form id="zelefin-config-form">
+            <fieldset class="verticalSection-extrabottompadding">
+                <legend>Seerr</legend>
+                <div class="inputContainer">
+                    <label class="inputLabel" for="seerrUrl">Seerr / Jellyseerr URL</label>
+                    <input id="seerrUrl" type="text" is="emby-input" placeholder="https://seerr.example.com" />
+                </div>
+                <div class="inputContainer">
+                    <label class="inputLabel" for="seerrApiKey">Seerr API key</label>
+                    <input id="seerrApiKey" type="password" is="emby-input" autocomplete="off" />
+                    <div class="fieldDescription">
+                        Seerr → Settings → General → API Key. Paste this once. Zelefin then signs each Jellyfin user in automatically — no password on the phone.
+                        Leave blank when saving if the key is already stored.
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="verticalSection-extrabottompadding">
+                <legend>Intro Skipper</legend>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="autoSkipIntro" type="checkbox" is="emby-checkbox" />
+                        <span class="checkboxLabel">Automatically skip intros</span>
+                    </label>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="autoSkipCredits" type="checkbox" is="emby-checkbox" />
+                        <span class="checkboxLabel">Automatically skip credits</span>
+                    </label>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="lockAutoSkip" type="checkbox" is="emby-checkbox" />
+                        <span class="checkboxLabel">Lock these skip settings on every device</span>
+                    </label>
+                    <div class="fieldDescription">
+                        When locked, Zelefin uses these values and hides the toggles. When unlocked, they are defaults only.
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="verticalSection-extrabottompadding">
+                <legend>iPhone notifications</legend>
+                <p>
+                    Alerts are sent through Zelefin’s push service.
+                    You do not need an Apple Developer account. Phones register themselves after
+                    sign-in; use the Notifications tab for event toggles.
+                </p>
+            </fieldset>
+
+            <button is="emby-button" type="submit" class="raised button-submit block">
+                <span>Save</span>
+            </button>
+        </form>
+    </div>
+</div>

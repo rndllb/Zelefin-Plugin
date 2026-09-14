@@ -1,0 +1,87 @@
+<div data-role="page" class="page type-interior pluginConfigurationPage withTabs"
+     data-require="emby-input,emby-button,emby-checkbox"
+     data-controller="__plugin/ZelefinNotifications.js">
+    <div class="content-primary">
+        <div class="verticalSection">
+            <div class="sectionTitleContainer">
+                <h1 class="sectionTitle">Zelefin</h1>
+            </div>
+            <h2 class="sectionTitle">Notifications</h2>
+            <p>
+                Turn on the events you want. Sign in to Zelefin and allow alerts. The phone
+                registers itself; this page is the only thing you keep changing.
+            </p>
+            <p>
+                Send a test to the Zelefin install signed in as you:
+            </p>
+            <p>
+                <button is="emby-button" type="button" class="raised" id="send-test-notification">
+                    <span>Send a test alert to my iPhone</span>
+                </button>
+            </p>
+            <p id="test-notification-status" class="fieldDescription"></p>
+            <p>
+                Custom webhooks (Seerr, Jellyfin Webhook plugin) can POST JSON to:
+            </p>
+            <p><code id="notification-endpoint"></code></p>
+            <p>
+                Header: <code>Authorization: MediaBrowser Token="API_KEY"</code>
+            </p>
+        </div>
+
+        <form id="zelefin-notification-form">
+            <fieldset class="verticalSection-extrabottompadding">
+                <legend>Item added</legend>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="itemAddedEnabled" type="checkbox" is="emby-checkbox" />
+                        <span class="checkboxLabel">Notify everyone when movies or episodes are added</span>
+                    </label>
+                    <div class="fieldDescription">
+                        Episodes from the same season that land within the grouping window become one notification.
+                    </div>
+                </div>
+                <p>Libraries</p>
+                <div class="fieldDescription">Leave all unchecked to include every library.</div>
+                <div id="library-container" class="checkboxContainer checkboxContainer-withDescription" style="margin-top: 16px"></div>
+                <div class="inputContainer">
+                    <label class="inputLabel" for="itemAddedGroupSeconds">Episode grouping (seconds)</label>
+                    <input id="itemAddedGroupSeconds" type="number" min="5" max="600" is="emby-input" />
+                </div>
+            </fieldset>
+
+            <fieldset class="verticalSection-extrabottompadding">
+                <legend>Admins</legend>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="sessionStartedEnabled" type="checkbox" is="emby-checkbox" />
+                        <span class="checkboxLabel">Session started</span>
+                    </label>
+                    <div class="fieldDescription">Admins are notified when another user comes online.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="playbackStartedEnabled" type="checkbox" is="emby-checkbox" />
+                        <span class="checkboxLabel">Playback started</span>
+                    </label>
+                    <div class="fieldDescription">Admins are notified when another user starts playing.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="userLockedOutEnabled" type="checkbox" is="emby-checkbox" />
+                        <span class="checkboxLabel">User locked out</span>
+                    </label>
+                    <div class="fieldDescription">Admins and the locked user are notified.</div>
+                </div>
+                <div class="inputContainer">
+                    <label class="inputLabel" for="eventThresholdSeconds">Duplicate event window (seconds)</label>
+                    <input id="eventThresholdSeconds" type="number" min="1" max="3600" is="emby-input" />
+                </div>
+            </fieldset>
+
+            <button is="emby-button" type="submit" class="raised button-submit block">
+                <span>Save</span>
+            </button>
+        </form>
+    </div>
+</div>

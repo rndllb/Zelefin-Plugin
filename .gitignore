@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+dist/
+*.user
+*.zip
+artifacts/
+.DS_Store
+*.p8
+relay/.env
+relay-node/node_modules/
+

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Zelefin.PushRelay</RootNamespace>
+    <AssemblyName>Zelefin.PushRelay</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Jellyfin.Plugin.Zelefin\Push\ApnsClient.cs" Link="Shared\ApnsClient.cs" />
+    <Compile Include="..\Jellyfin.Plugin.Zelefin\Api\PushMessage.cs" Link="Shared\PushMessage.cs" />
+  </ItemGroup>
+</Project>
