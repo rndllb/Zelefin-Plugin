@@ -16,31 +16,13 @@ Requires Jellyfin 12 / .NET 10.
 
 ## Install
 
-1. Dashboard → Plugins → Catalog → ⚙️ → Add repository:
+Dashboard → Plugins → Catalog → ⚙️ → Add repository:
 
-   ```
-   https://raw.githubusercontent.com/rndllb/Zelefin-Plugin/main/manifest.json
-   ```
-
-2. Catalog → Zelefin → Install → restart Jellyfin.
-
-The catalog card uses [`thumb.png`](thumb.png).
-
-Manual install: copy **only** `Jellyfin.Plugin.Zelefin.dll` into a **versioned** folder. Do not copy `meta.json` — Jellyfin writes that file itself, and a root-owned copy will crash startup.
-
-Use the same versioned folder layout as other Jellyfin plugins:
-
-- Linux: `/var/lib/jellyfin/plugins/Zelefin_1.0.0.0/`
-- Docker: `/config/data/plugins/Zelefin_1.0.0.0/`
-- Windows: `%AppData%\Jellyfin\Server\plugins\Zelefin_1.0.0.0\`
-
-The plugins directory must be writable by the Jellyfin process. If you copied files as root:
-
-```bash
-chown -R 1000:1000 /config/data/plugins/Zelefin_1.0.0.0
+```
+https://raw.githubusercontent.com/rndllb/Zelefin-Plugin/main/manifest.json
 ```
 
-If a previous `plugins/Zelefin` folder exists, delete it before restarting. Do not copy `Jellyfin.Controller.dll` or anything else from `bin/`.
+Catalog → Zelefin → Install → restart Jellyfin.
 
 ## Configure
 
@@ -74,33 +56,6 @@ Dashboard → Plugins → Zelefin
 ## Push service
 
 Phones register an Apple Push token with this plugin. The plugin posts to `https://push.zelefin.app/v1/send`. Apple credentials stay with the Zelefin publisher.
-
-The hosted sender is [`relay-node/`](relay-node/README.md). [`relay/`](relay/README.md) is an optional .NET process for a VPS or Docker host. Do not put a `.p8` in this repository.
-
-## Build
-
-```bash
-dotnet test
-dotnet build Jellyfin.Plugin.Zelefin --configuration Release
-```
-
-The release artifact is only `Jellyfin.Plugin.Zelefin.dll`. Jellyfin 12 already ships the controller assemblies. The Apple Push key is not in this DLL.
-
-```bash
-make zip
-# dist/zelefin-1.0.0.0.zip
-```
-
-## Deploy to a local Docker host
-
-`scripts/deploy-zimaos.sh` builds the DLL, copies **only** that file into a versioned plugin folder owned by uid `1000` (the Jellyfin container user), and restarts the `jellyfin` container. It does not copy `meta.json`.
-
-```bash
-make deploy
-# or: ./scripts/deploy-zimaos.sh
-```
-
-Defaults: SSH host `zimaos`, plugins at `/DATA/AppData/jellyfin/config/data/plugins`, owner `1000:1000`. Override with `--host` or `ZELEFIN_*` environment variables. `./scripts/deploy-zimaos.sh --help` lists them.
 
 ## License
 

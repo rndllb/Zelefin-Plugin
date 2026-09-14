@@ -1,6 +1,10 @@
 # Zelefin notifications
 
-Install the [Zelefin plugin](https://github.com/rndllb/Zelefin-Plugin), turn on the events you want, then sign in to Zelefin and allow alerts. You do not need an Apple Developer account.
+Install the plugin from Catalog using this repository, turn on the events you want, then sign in to Zelefin and allow alerts. You do not need an Apple Developer account.
+
+```
+https://raw.githubusercontent.com/rndllb/Zelefin-Plugin/main/manifest.json
+```
 
 The plugin posts device tokens to Zelefin’s push service (`https://push.zelefin.app/v1/send`). Apple credentials stay with the app publisher. They are not pasted into this dashboard and they are not baked into the plugin DLL.
 
