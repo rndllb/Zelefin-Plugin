@@ -24,6 +24,8 @@ Requires Jellyfin 12 / .NET 10.
 
 2. Catalog → Zelefin → Install → restart Jellyfin.
 
+The catalog card uses [`thumb.png`](thumb.png).
+
 Manual install: copy **only** `Jellyfin.Plugin.Zelefin.dll` into a **versioned** folder. Do not copy `meta.json` — Jellyfin writes that file itself, and a root-owned copy will crash startup.
 
 Use the same versioned folder layout as other Jellyfin plugins:
