@@ -48,13 +48,17 @@ dotnet build "$ROOT/Jellyfin.Plugin.Zelefin/Jellyfin.Plugin.Zelefin.csproj" \
 
 DLL="$ROOT/Jellyfin.Plugin.Zelefin/bin/Release/net10.0/Jellyfin.Plugin.Zelefin.dll"
 [[ -f "$DLL" ]] || { echo "Missing $DLL" >&2; exit 1; }
+THUMB="$ROOT/thumb.png"
+[[ -f "$THUMB" ]] || { echo "Missing $THUMB" >&2; exit 1; }
 
 FOLDER="Zelefin_${VERSION}"
 DEST="${PLUGINS_HOST}/${FOLDER}"
 REMOTE_TMP="/tmp/Jellyfin.Plugin.Zelefin.dll"
+REMOTE_THUMB="/tmp/zelefin-thumb.png"
 
-echo "Copying DLL to ${HOST}:${DEST}"
+echo "Copying DLL and thumb to ${HOST}:${DEST}"
 scp -q "$DLL" "${HOST}:${REMOTE_TMP}"
+scp -q "$THUMB" "${HOST}:${REMOTE_THUMB}"
 
 ssh "$HOST" env \
   DEST="$DEST" \
@@ -65,6 +69,7 @@ ssh "$HOST" env \
   CONTAINER="$CONTAINER" \
   RESTART="$RESTART" \
   REMOTE_TMP="$REMOTE_TMP" \
+  REMOTE_THUMB="$REMOTE_THUMB" \
   bash -s <<'REMOTE'
 set -euo pipefail
 
@@ -88,6 +93,24 @@ done
 sudo install -m 644 -o "$OWNER_UID" -g "$OWNER_GID" \
   "$REMOTE_TMP" "$DEST/Jellyfin.Plugin.Zelefin.dll"
 rm -f "$REMOTE_TMP"
+sudo install -m 644 -o "$OWNER_UID" -g "$OWNER_GID" \
+  "$REMOTE_THUMB" "$DEST/thumb.png"
+rm -f "$REMOTE_THUMB"
+
+if [[ -f "$DEST/meta.json" ]]; then
+  sudo python3 - "$DEST/meta.json" "$OWNER_UID" "$OWNER_GID" <<'PY'
+import json, os, sys
+path, uid, gid = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+with open(path, encoding="utf-8") as handle:
+    meta = json.load(handle)
+meta["imagePath"] = "thumb.png"
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(meta, handle, indent=2)
+    handle.write("\n")
+os.chown(path, uid, gid)
+os.chmod(path, 0o644)
+PY
+fi
 
 # Drop a root-owned manifest so Jellyfin can write its own.
 if [[ -e "$DEST/meta.json" ]]; then

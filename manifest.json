@@ -6,7 +6,7 @@
     "overview": "Companion plugin for the Zelefin iOS app",
     "owner": "rndllb",
     "category": "General",
-    "imageUrl": "https://raw.githubusercontent.com/rndllb/Zelefin-Plugin/main/web/mark.png",
+    "imageUrl": "https://raw.githubusercontent.com/rndllb/Zelefin-Plugin/main/thumb.png",
     "versions": [
       {
         "version": "1.0.0.0",
