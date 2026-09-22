@@ -29,6 +29,27 @@ public class ClientConfig
     [JsonPropertyName("notificationsReady")]
     public bool NotificationsReady { get; set; }
 
+    /// <summary>Plugin assembly version. Older apps ignore this.</summary>
+    [JsonPropertyName("pluginVersion")]
+    public string PluginVersion { get; set; } = "1.0.0.0";
+
+    /// <summary>Capability contract. 1 is notifications-only. 2 adds the 1.1 endpoints.</summary>
+    [JsonPropertyName("apiVersion")]
+    public int ApiVersion { get; set; } = 1;
+
+    /// <summary>Feature flags the signed-in app may call. Unknown flags are ignored.</summary>
+    [JsonPropertyName("capabilities")]
+    public List<string> Capabilities { get; set; } = [];
+
+    public const int CurrentApiVersion = 2;
+
+    public static readonly string[] CurrentCapabilities =
+    [
+        "hidden",
+        "ownedIndex",
+        "collections"
+    ];
+
     public static ClientConfig From(Configuration.PluginConfiguration config) => new()
     {
         SeerrUrl = Configuration.PluginConfiguration.NormalizeUrl(config.SeerrUrl),
@@ -39,7 +60,10 @@ public class ClientConfig
         AutoSkipCredits = config.AutoSkipCredits,
         LockAutoSkip = config.LockAutoSkip,
         // The app should always register. Sending goes through the publisher relay.
-        NotificationsReady = true
+        NotificationsReady = true,
+        PluginVersion = global::Jellyfin.Plugin.Zelefin.ZelefinPlugin.Version,
+        ApiVersion = CurrentApiVersion,
+        Capabilities = [..CurrentCapabilities]
     };
 }
 

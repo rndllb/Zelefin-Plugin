@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
+using Jellyfin.Plugin.Zelefin.Library;
 using Jellyfin.Plugin.Zelefin.Push;
+using Jellyfin.Plugin.Zelefin.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +14,15 @@ namespace Jellyfin.Plugin.Zelefin.Api;
 [Route("Zelefin")]
 public class ZelefinController : ControllerBase
 {
-    private readonly NotificationService _notifications;
+    private const int MaxOwnedLookup = 2_000;
 
-    public ZelefinController(NotificationService notifications)
+    private readonly NotificationService _notifications;
+    private readonly LibraryIndex _library;
+
+    public ZelefinController(NotificationService notifications, LibraryIndex library)
     {
         _notifications = notifications;
+        _library = library;
     }
 
     [HttpGet("config")]
@@ -90,6 +96,132 @@ public class ZelefinController : ControllerBase
         return Ok();
     }
 
+    [HttpGet("hidden")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult GetHidden()
+    {
+        if (!TryCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        return new JsonResult(ZelefinPlugin.Instance?.Hidden.Snapshot(userId) ?? Storage.HiddenSnapshot.Empty);
+    }
+
+    [HttpPost("hidden/{surface}/{itemId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public ActionResult PostHidden([FromRoute] string surface, [FromRoute] string itemId)
+    {
+        if (!TryHidden(surface, itemId, out var userId, out var parsedSurface, out var id, out var error))
+        {
+            return error!;
+        }
+
+        ZelefinPlugin.Instance!.Hidden.Add(userId, parsedSurface, id);
+        return NoContent();
+    }
+
+    [HttpDelete("hidden/{surface}/{itemId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public ActionResult DeleteHidden([FromRoute] string surface, [FromRoute] string itemId)
+    {
+        if (!TryHidden(surface, itemId, out var userId, out var parsedSurface, out var id, out var error))
+        {
+            return error!;
+        }
+
+        ZelefinPlugin.Instance!.Hidden.Remove(userId, parsedSurface, id);
+        return NoContent();
+    }
+
+    [HttpDelete("hidden/{surface}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public ActionResult DeleteHiddenSurface([FromRoute] string surface)
+    {
+        if (!TryCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        if (!HomeSurfaceParser.TryParse(surface, out var parsed))
+        {
+            return BadRequest("surface must be continueWatching, nextUp, or recentlyWatched");
+        }
+
+        ZelefinPlugin.Instance?.Hidden.Clear(userId, parsed);
+        return NoContent();
+    }
+
+    [HttpGet("library/tmdb")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult GetTmdbCatalog()
+    {
+        if (!TryCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        return new JsonResult(_library.CatalogFor(userId));
+    }
+
+    [HttpPost("library/owned")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult PostOwned([FromBody] OwnedLookupRequest? body)
+    {
+        if (!TryCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var ids = body?.Tmdb ?? [];
+        if (ids.Count > MaxOwnedLookup)
+        {
+            return BadRequest($"tmdb accepts at most {MaxOwnedLookup} ids");
+        }
+
+        return new JsonResult(_library.Owned(userId, ids, body?.Kind));
+    }
+
+    [HttpGet("library/fingerprint")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult GetFingerprint()
+    {
+        if (!TryCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        return new JsonResult(_library.Fingerprint(userId));
+    }
+
+    [HttpGet("item/{itemId}/collections")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult GetCollections([FromRoute] string itemId)
+    {
+        if (!TryCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        if (!Guid.TryParse(itemId, out var id) || id == Guid.Empty)
+        {
+            return BadRequest("itemId must be a UUID");
+        }
+
+        return new JsonResult(new CollectionListDto
+        {
+            Collections = _library.CollectionsContaining(userId, id).ToList()
+        });
+    }
+
     [HttpPost("notification/test")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -129,6 +261,44 @@ public class ZelefinController : ControllerBase
             || type.EndsWith("/userId", StringComparison.OrdinalIgnoreCase)
             || type.Equals("UserId", StringComparison.OrdinalIgnoreCase)
             || type.Equals("Jellyfin-UserId", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryHidden(
+        string surface,
+        string itemId,
+        out Guid userId,
+        out HomeSurface parsedSurface,
+        out Guid id,
+        out ActionResult? error)
+    {
+        parsedSurface = default;
+        id = Guid.Empty;
+        if (!TryCurrentUserId(out userId))
+        {
+            error = Unauthorized();
+            return false;
+        }
+
+        if (!HomeSurfaceParser.TryParse(surface, out parsedSurface))
+        {
+            error = BadRequest("surface must be continueWatching, nextUp, or recentlyWatched");
+            return false;
+        }
+
+        if (!Guid.TryParse(itemId, out id) || id == Guid.Empty)
+        {
+            error = BadRequest("itemId must be a UUID");
+            return false;
+        }
+
+        if (ZelefinPlugin.Instance is null)
+        {
+            error = StatusCode(StatusCodes.Status503ServiceUnavailable);
+            return false;
+        }
+
+        error = null;
+        return true;
     }
 
     public static bool TryDeviceId(string? value, out Guid deviceId)

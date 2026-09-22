@@ -2,10 +2,10 @@
   "category": "General",
   "guid": "b18e5910-21dd-49fe-a150-bb21ec3755e8",
   "name": "Zelefin",
-  "description": "Pushes Seerr and skip settings to Zelefin, and sends iOS notifications when titles are added.",
+  "description": "Companion for Zelefin: notifications, home-row hiding, and library lookups.",
   "overview": "Companion plugin for the Zelefin iOS app",
   "owner": "rndllb",
   "targetAbi": "12.0.0.0",
-  "timestamp": "2026-09-08T00:00:00Z",
-  "version": "1.0.0.0"
+  "timestamp": "2026-09-21T00:00:00Z",
+  "version": "1.1.0.0"
 }

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Jellyfin.Plugin.Zelefin.Api;
 using Jellyfin.Plugin.Zelefin.Configuration;
+using Jellyfin.Plugin.Zelefin.Library;
 using Jellyfin.Plugin.Zelefin.Push;
 using Jellyfin.Plugin.Zelefin.Storage;
 using Xunit;
@@ -104,6 +105,17 @@ public class ClientConfigTests
         Assert.Equal("abc", body.ItemId);
         Assert.Equal("series", body.SeriesId);
         Assert.Equal("Episode", body.Type);
+    }
+
+    [Fact]
+    public void From_advertises_the_1_1_capabilities()
+    {
+        var client = ClientConfig.From(new PluginConfiguration());
+        Assert.Equal(ClientConfig.CurrentApiVersion, client.ApiVersion);
+        Assert.Equal(ZelefinPlugin.Version, client.PluginVersion);
+        Assert.Contains("hidden", client.Capabilities);
+        Assert.Contains("ownedIndex", client.Capabilities);
+        Assert.Contains("collections", client.Capabilities);
     }
 
     [Fact]
@@ -364,6 +376,63 @@ public class EventThrottleTests
         Assert.False(EventThrottle.HasRecentlyProcessed("a", TimeSpan.FromMinutes(1)));
         Assert.True(EventThrottle.HasRecentlyProcessed("a", TimeSpan.FromMinutes(1)));
         Assert.False(EventThrottle.HasRecentlyProcessed("b", TimeSpan.FromMinutes(1)));
+    }
+}
+
+public class HiddenStoreTests
+{
+    [Fact]
+    public void Add_is_scoped_to_the_user_and_the_row()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "zelefin-hidden-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            var store = new HiddenStore(folder);
+            var ada = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var bob = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var title = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+            store.Add(ada, HomeSurface.RecentlyWatched, title);
+            store.Add(ada, HomeSurface.ContinueWatching, title);
+
+            var adaRows = store.Snapshot(ada);
+            Assert.Equal([title.ToString("D")], adaRows.RecentlyWatched);
+            Assert.Equal([title.ToString("D")], adaRows.ContinueWatching);
+            Assert.Empty(adaRows.NextUp);
+            Assert.Empty(store.Snapshot(bob).RecentlyWatched);
+
+            store.RemoveAll(ada, title);
+            Assert.Empty(store.Snapshot(ada).RecentlyWatched);
+            Assert.Empty(store.Snapshot(ada).ContinueWatching);
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [Theory]
+    [InlineData("continueWatching", true)]
+    [InlineData("nextUp", true)]
+    [InlineData("recentlyWatched", true)]
+    [InlineData("recent", false)]
+    public void Surface_names_match_the_app(string raw, bool expected)
+    {
+        Assert.Equal(expected, HomeSurfaceParser.TryParse(raw, out _));
+    }
+}
+
+public class TmdbIdentifierTests
+{
+    [Theory]
+    [InlineData("Tmdb", "550", 550)]
+    [InlineData("TmdbId", " 27205 ", 27205)]
+    [InlineData("Imdb", "tt1375666", null)]
+    public void Parse_reads_tmdb_keys_only(string key, string value, int? expected)
+    {
+        var ids = new Dictionary<string, string> { [key] = value };
+        Assert.Equal(expected, TmdbIdentifiers.Parse(ids));
     }
 }
 
