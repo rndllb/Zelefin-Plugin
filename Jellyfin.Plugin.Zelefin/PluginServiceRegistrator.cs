@@ -1,5 +1,4 @@
 using Jellyfin.Data.Events.Users;
-using Jellyfin.Plugin.Zelefin.Library;
 using Jellyfin.Plugin.Zelefin.Push;
 using Jellyfin.Plugin.Zelefin.Push.Events;
 using MediaBrowser.Controller;
@@ -18,9 +17,6 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<ApnsClient>();
         serviceCollection.AddHttpClient<PushRelayClient>();
         serviceCollection.AddSingleton<NotificationService>();
-        serviceCollection.AddSingleton<LibraryIndex>();
-        serviceCollection.AddHostedService(provider => provider.GetRequiredService<LibraryIndex>());
-        serviceCollection.AddHostedService<HiddenPlaybackService>();
         serviceCollection.AddScoped<IEventConsumer<SessionStartedEventArgs>, SessionStartEvent>();
         serviceCollection.AddScoped<IEventConsumer<PlaybackStartEventArgs>, PlaybackStartEvent>();
         serviceCollection.AddScoped<IEventConsumer<UserLockedOutEventArgs>, UserLockedOutEvent>();

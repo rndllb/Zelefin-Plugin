@@ -2,7 +2,7 @@
 
 Jellyfin plugin for the [Zelefin](https://github.com/rndllb/Zelefin) iOS app. Site: [zelefin.app](https://zelefin.app).
 
-Admins set Seerr and Intro Skipper defaults once. Every Zelefin install on this server picks them up after sign-in. The same plugin sends iPhone notifications when titles are added, when sessions start, and when an account is locked. It also hides titles from Home without clearing watch history, and answers TMDB ownership and collection lookups so the app does not scan the whole library. Jellyfin admins do not need an Apple Developer account.
+Admins set Seerr and Intro Skipper defaults once. Every Zelefin install on this server picks them up after sign-in. The same plugin sends iPhone notifications when titles are added, when sessions start, and when an account is locked. Jellyfin admins do not need an Apple Developer account.
 
 The server is the source of truth. The app does not ask each user to wire plugins by hand.
 
@@ -11,8 +11,6 @@ The server is the source of truth. The app does not ask each user to wire plugin
 - **Seerr** — Dashboard → Plugins → Zelefin. Paste the Seerr URL and API key (Seerr → Settings → General). Zelefin signs each user in automatically.
 - **Intro Skipper defaults** — Optional auto-skip for intros and credits, with a lock so devices cannot override them.
 - **Push notifications** — Item added (movies and grouped episodes), session started (admins), playback started (admins), user locked out, plus a webhook for Seerr or the Jellyfin webhook plugin. Alerts go through [Zelefin’s push service](https://push.zelefin.app); you never paste an Apple key.
-- **Home rows** — Hide a title from Continue Watching, Next Up, or Recently Watched without marking it unplayed. Playing it again puts it back.
-- **Library lookups** — TMDB ownership and collection membership, so Zelefin can show "In Library" and collection chips without paging the catalog.
 
 Requires Jellyfin 12 / .NET 10.
 
@@ -51,19 +49,9 @@ Dashboard → Plugins → Zelefin
 | `GET` | `/Zelefin/config` | Signed-in user |
 | `POST` | `/Zelefin/device` | Signed-in user (APNs token) |
 | `DELETE` | `/Zelefin/device/{deviceId}` | Signed-in user |
-| `GET` | `/Zelefin/hidden` | Signed-in user |
-| `POST` | `/Zelefin/hidden/{surface}/{itemId}` | Signed-in user |
-| `DELETE` | `/Zelefin/hidden/{surface}/{itemId}` | Signed-in user |
-| `DELETE` | `/Zelefin/hidden/{surface}` | Signed-in user |
-| `GET` | `/Zelefin/library/tmdb` | Signed-in user |
-| `POST` | `/Zelefin/library/owned` | Signed-in user |
-| `GET` | `/Zelefin/library/fingerprint` | Signed-in user |
-| `GET` | `/Zelefin/item/{itemId}/collections` | Signed-in user |
 | `POST` | `/Zelefin/notification` | Signed-in user or API key |
 
-`GET /Zelefin/config` never returns Apple Push credentials. The plugin does not ship an APNs `.p8`. Version 1.1 adds `pluginVersion`, `apiVersion`, and `capabilities` so the app can pick the new endpoints without probing.
-
-`surface` is `continueWatching`, `nextUp`, or `recentlyWatched`. Hidden IDs are per user. Playback or marking played un-hides that title.
+`GET /Zelefin/config` never returns Apple Push credentials. The plugin does not ship an APNs `.p8`.
 
 ## Push service
 

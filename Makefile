@@ -1,6 +1,6 @@
 .PHONY: test build zip deploy relay
 
-VERSION := 1.1.0.0
+VERSION := 1.0.0.0
 FILE := zelefin-$(VERSION).zip
 
 test:

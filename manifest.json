@@ -2,20 +2,12 @@
   {
     "guid": "b18e5910-21dd-49fe-a150-bb21ec3755e8",
     "name": "Zelefin",
-    "description": "Companion for the Zelefin iOS app. Notifications, home-row hiding, and library lookups.",
+    "description": "Companion plugin for the Zelefin iOS app. Pushes Seerr and skip defaults to every install, and sends lock-screen notifications when titles are added.",
     "overview": "Companion plugin for the Zelefin iOS app",
     "owner": "rndllb",
     "category": "General",
     "imageUrl": "https://raw.githubusercontent.com/rndllb/Zelefin-Plugin/main/thumb.png",
     "versions": [
-      {
-        "version": "1.1.0.0",
-        "changelog": "Hide titles from Home without clearing watch history. TMDB ownership and collection lookups so the app does not scan the whole library.",
-        "targetAbi": "12.0.0.0",
-        "sourceUrl": "https://github.com/rndllb/Zelefin-Plugin/releases/download/1.1.0.0/zelefin-1.1.0.0.zip",
-        "checksum": "f7fa5abb516d62b5fd7087b621a1f9d9",
-        "timestamp": "2026-09-21T00:00:00Z"
-      },
       {
         "version": "1.0.0.0",
         "changelog": "Initial release: Seerr defaults, Intro Skipper lock, and iPhone notifications through Zelefin’s push service.",

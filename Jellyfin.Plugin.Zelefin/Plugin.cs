@@ -12,8 +12,6 @@ namespace Jellyfin.Plugin.Zelefin;
 /// </summary>
 public class ZelefinPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
-    public new const string Version = "1.1.0.0";
-
     public static readonly Guid PluginGuid = Guid.Parse("b18e5910-21dd-49fe-a150-bb21ec3755e8");
 
     public ZelefinPlugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
@@ -21,19 +19,16 @@ public class ZelefinPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         Instance = this;
         Devices = new DeviceStore(applicationPaths.DataPath);
-        Hidden = new HiddenStore(applicationPaths.DataPath);
     }
 
     public static ZelefinPlugin? Instance { get; private set; }
 
     public DeviceStore Devices { get; }
 
-    public HiddenStore Hidden { get; }
-
     public override string Name => "Zelefin";
 
     public override string Description =>
-        "Companion for Zelefin: notifications, home-row hiding, and library lookups.";
+        "Pushes Seerr and skip settings to Zelefin, and sends iOS notifications when new titles arrive.";
 
     public override Guid Id => PluginGuid;
 
