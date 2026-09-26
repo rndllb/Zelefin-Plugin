@@ -4,8 +4,9 @@ using MediaBrowser.Model.Plugins;
 namespace Jellyfin.Plugin.Zelefin.Configuration;
 
 /// <summary>
-/// Server-wide defaults for the Zelefin iOS app. Apple Push credentials belong on the
-/// publisher relay, not in this dashboard. Local APNs fields remain for an already-saved key.
+/// Server-wide defaults for the Zelefin iOS and Android apps. Apple Push and Firebase
+/// credentials belong on the publisher relay, not in this dashboard. Local APNs fields
+/// remain for an already-saved key; Android devices always go through the relay.
 /// </summary>
 public class PluginConfiguration : BasePluginConfiguration
 {
@@ -53,7 +54,8 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool ApnsProduction { get; set; }
 
     /// <summary>
-    /// Publisher-operated APNs relay. Jellyfin admins do not paste an Apple key.
+    /// Publisher-operated push relay for APNs and Firebase. Jellyfin admins do not paste
+    /// an Apple key or a Firebase service account.
     /// </summary>
     public string PushRelayUrl { get; set; } = DefaultPushRelayUrl;
 

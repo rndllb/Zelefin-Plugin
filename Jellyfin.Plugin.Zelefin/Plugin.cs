@@ -8,7 +8,7 @@ using MediaBrowser.Model.Serialization;
 namespace Jellyfin.Plugin.Zelefin;
 
 /// <summary>
-/// Companion plugin for the Zelefin iOS app.
+/// Companion plugin for the Zelefin iOS and Android apps.
 /// </summary>
 public class ZelefinPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
@@ -28,7 +28,7 @@ public class ZelefinPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public override string Name => "Zelefin";
 
     public override string Description =>
-        "Pushes Seerr and skip settings to Zelefin, and sends iOS notifications when new titles arrive.";
+        "Pushes Seerr and skip settings to Zelefin, and sends iOS and Android notifications when new titles arrive.";
 
     public override Guid Id => PluginGuid;
 

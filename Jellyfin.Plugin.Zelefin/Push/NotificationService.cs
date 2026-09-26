@@ -60,7 +60,7 @@ public sealed class NotificationService
         var devices = ZelefinPlugin.Instance?.Devices.ForUser(userId) ?? [];
         if (devices.Count == 0)
         {
-            return "Open Zelefin on your iPhone, sign in, and allow notifications. Then try again.";
+            return "Open Zelefin on your phone or tablet, sign in, and allow notifications. Then try again.";
         }
 
         await SendAsync(
@@ -113,16 +113,26 @@ public sealed class NotificationService
             return;
         }
 
+        var apple = devices.Where(device => !device.IsAndroid).ToList();
+        var android = devices.Where(device => device.IsAndroid).ToList();
+
         var credentials = config.LocalApnsCredentials();
         if (credentials is not null)
         {
-            await SendLocalApnsAsync(credentials, devices, message, cancellationToken).ConfigureAwait(false);
+            await SendLocalApnsAsync(credentials, apple, message, cancellationToken).ConfigureAwait(false);
+            apple = [];
+        }
+
+        // Android always goes through the relay; Firebase credentials never live on Jellyfin.
+        if (!config.HasPushRelay || (apple.Count == 0 && android.Count == 0))
+        {
             return;
         }
 
         var result = await _relay.SendAsync(
             config.PushRelayUrl,
-            devices.Select(device => device.Token).Distinct().ToList(),
+            apple.Select(device => device.Token).Distinct().ToList(),
+            android.Select(device => device.Token).Distinct().ToList(),
             message,
             cancellationToken).ConfigureAwait(false);
         foreach (var token in result.ExpiredTokens)

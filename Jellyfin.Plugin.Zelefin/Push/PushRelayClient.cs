@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.Zelefin.Push;
 
 /// <summary>
-/// Sends device tokens to the Zelefin publisher relay. Apple credentials stay there,
-/// not on each Jellyfin.
+/// Sends device tokens to the Zelefin publisher relay. Apple and Firebase credentials
+/// stay there, not on each Jellyfin.
 /// </summary>
 public sealed class PushRelayClient
 {
@@ -23,11 +23,12 @@ public sealed class PushRelayClient
 
     public async Task<RelaySendResult> SendAsync(
         string relayUrl,
-        IReadOnlyList<string> tokens,
+        IReadOnlyList<string> apnsTokens,
+        IReadOnlyList<string> fcmTokens,
         PushMessage message,
         CancellationToken cancellationToken)
     {
-        if (tokens.Count == 0)
+        if (apnsTokens.Count == 0 && fcmTokens.Count == 0)
         {
             return new RelaySendResult(true, []);
         }
@@ -40,7 +41,7 @@ public sealed class PushRelayClient
 
         using var response = await _http.PostAsJsonAsync(
             uri,
-            Body(tokens, message),
+            Body(apnsTokens, fcmTokens, message),
             cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
@@ -55,9 +56,13 @@ public sealed class PushRelayClient
         return new RelaySendResult(true, parsed?.ExpiredTokens ?? []);
     }
 
-    public static RelaySendRequest Body(IReadOnlyList<string> tokens, PushMessage message) => new()
+    public static RelaySendRequest Body(
+        IReadOnlyList<string> apnsTokens,
+        IReadOnlyList<string> fcmTokens,
+        PushMessage message) => new()
     {
-        Tokens = [.. tokens],
+        Tokens = [.. apnsTokens],
+        FcmTokens = [.. fcmTokens],
         Title = message.Title,
         Subtitle = message.Subtitle,
         Body = message.Body,
@@ -69,8 +74,13 @@ public sealed class PushRelayClient
 
 public sealed class RelaySendRequest
 {
+    /// <summary>APNs tokens from iOS installs.</summary>
     [JsonPropertyName("tokens")]
     public List<string> Tokens { get; set; } = [];
+
+    /// <summary>Firebase Cloud Messaging tokens from Android installs.</summary>
+    [JsonPropertyName("fcmTokens")]
+    public List<string> FcmTokens { get; set; } = [];
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;

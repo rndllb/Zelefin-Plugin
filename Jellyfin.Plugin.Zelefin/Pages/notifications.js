@@ -39,7 +39,7 @@ export default function (view) {
             });
             const payload = typeof result === 'string' ? JSON.parse(result) : result;
             status.textContent = payload.ok
-                ? 'Sent. Check your iPhone.'
+                ? 'Sent. Check your phone.'
                 : (payload.error || 'Could not send a test alert.');
         } catch (error) {
             status.textContent = error?.message || 'Could not send a test alert.';

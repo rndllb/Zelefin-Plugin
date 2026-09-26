@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace Jellyfin.Plugin.Zelefin.Api;
 
 /// <summary>
-/// Public config the Zelefin app fetches after sign-in. Apple Push secrets stay on the
-/// publisher relay, never in this payload.
+/// Public config the Zelefin app fetches after sign-in. Apple Push and Firebase secrets
+/// stay on the publisher relay, never in this payload.
 /// </summary>
 public class ClientConfig
 {
@@ -50,5 +50,12 @@ public class DeviceTokenRequest
 
     [JsonPropertyName("deviceId")]
     public string DeviceId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// "android" registers a Firebase token. Anything else, including a missing value
+    /// from older iOS builds, registers an APNs token.
+    /// </summary>
+    [JsonPropertyName("platform")]
+    public string? Platform { get; set; }
 }
 

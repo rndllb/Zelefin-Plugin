@@ -88,6 +88,7 @@ public class ClientConfigTests
     {
         var body = PushRelayClient.Body(
             ["tok-a", "tok-b"],
+            ["fcm-a"],
             new PushMessage
             {
                 Title = "New episode",
@@ -98,6 +99,7 @@ public class ClientConfigTests
                 Type = "Episode"
             });
         Assert.Equal(["tok-a", "tok-b"], body.Tokens);
+        Assert.Equal(["fcm-a"], body.FcmTokens);
         Assert.Equal("New episode", body.Title);
         Assert.Equal("Andor", body.Subtitle);
         Assert.Equal("S1:E1", body.Body);
@@ -347,6 +349,54 @@ public class DeviceStoreTests
             store.Upsert(device, ada, "token-2");
             Assert.Equal(1, store.Count);
             Assert.Equal("token-2", store.All().Single().Token);
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [Fact]
+    public void Upsert_records_the_platform()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "zelefin-tests-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            using var store = new DeviceStore(folder);
+            var ada = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            store.Upsert(Guid.NewGuid(), ada, "apns-token");
+            store.Upsert(Guid.NewGuid(), ada, "fcm-token", "Android");
+            store.Upsert(Guid.NewGuid(), ada, "other-token", "windows");
+            var byToken = store.All().ToDictionary(record => record.Token);
+            Assert.False(byToken["apns-token"].IsAndroid);
+            Assert.True(byToken["fcm-token"].IsAndroid);
+            Assert.Equal(DevicePlatform.Android, byToken["fcm-token"].Platform);
+            Assert.Equal(DevicePlatform.Ios, byToken["other-token"].Platform);
+
+            using var reloaded = new DeviceStore(folder);
+            Assert.True(reloaded.All().Single(record => record.Token == "fcm-token").IsAndroid);
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [Fact]
+    public void Rows_saved_before_android_support_load_as_ios()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "zelefin-tests-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(folder, "zelefin-devices.json"),
+                """[{"token":"old","deviceId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","userId":"11111111-1111-1111-1111-111111111111","updatedAt":1}]""");
+            using var store = new DeviceStore(folder);
+            var record = store.All().Single();
+            Assert.Equal(DevicePlatform.Ios, record.Platform);
+            Assert.False(record.IsAndroid);
         }
         finally
         {

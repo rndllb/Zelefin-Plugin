@@ -16,10 +16,31 @@ public class DeviceRecord
 
     [JsonPropertyName("updatedAt")]
     public long UpdatedAt { get; set; }
+
+    /// <summary>
+    /// "ios" for an APNs token, "android" for a Firebase token. Rows saved before
+    /// Android support have no platform and are iOS.
+    /// </summary>
+    [JsonPropertyName("platform")]
+    public string Platform { get; set; } = DevicePlatform.Ios;
+
+    [JsonIgnore]
+    public bool IsAndroid => DevicePlatform.Normalize(Platform) == DevicePlatform.Android;
+}
+
+public static class DevicePlatform
+{
+    public const string Ios = "ios";
+    public const string Android = "android";
+
+    public static string Normalize(string? value)
+    {
+        return string.Equals(value?.Trim(), Android, StringComparison.OrdinalIgnoreCase) ? Android : Ios;
+    }
 }
 
 /// <summary>
-/// JSON file of APNs device tokens, one row per Zelefin install.
+/// JSON file of push tokens (APNs for iOS, Firebase for Android), one row per Zelefin install.
 /// </summary>
 public sealed class DeviceStore : IDisposable
 {
@@ -68,14 +89,15 @@ public sealed class DeviceStore : IDisposable
         }
     }
 
-    public DeviceRecord Upsert(Guid deviceId, Guid userId, string token)
+    public DeviceRecord Upsert(Guid deviceId, Guid userId, string token, string? platform = null)
     {
         var record = new DeviceRecord
         {
             DeviceId = deviceId,
             UserId = userId,
             Token = token.Trim(),
-            UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            Platform = DevicePlatform.Normalize(platform)
         };
 
         lock (_gate)

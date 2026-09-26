@@ -49,7 +49,7 @@ public class ZelefinController : ControllerBase
             return BadRequest("deviceId must be a UUID");
         }
 
-        var stored = ZelefinPlugin.Instance!.Devices.Upsert(deviceId, userId, body.Token);
+        var stored = ZelefinPlugin.Instance!.Devices.Upsert(deviceId, userId, body.Token, body.Platform);
         return new JsonResult(stored);
     }
 
