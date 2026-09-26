@@ -105,9 +105,11 @@ function sendOne(host, creds, token, body, authorization) {
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const FCM_CHANNEL_ID = (process.env.FCM_CHANNEL_ID || "zelefin_alerts").trim();
 
+const BUNDLED_FCM_ACCOUNT = new URL("./fcm-service-account.json", import.meta.url);
+
 function fcmAccount() {
   let raw = (process.env.FCM_SERVICE_ACCOUNT || "").trim();
-  const file = (process.env.FCM_SERVICE_ACCOUNT_FILE || "").trim();
+  const file = (process.env.FCM_SERVICE_ACCOUNT_FILE || "").trim() || (fs.existsSync(BUNDLED_FCM_ACCOUNT) ? BUNDLED_FCM_ACCOUNT : "");
   if (!raw && file) {
     try {
       raw = fs.readFileSync(file, "utf8");

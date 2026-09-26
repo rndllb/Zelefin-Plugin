@@ -10,4 +10,5 @@ artifacts/
 *.p8
 relay/.env
 relay-node/node_modules/
+relay-node/fcm-service-account.json
 
