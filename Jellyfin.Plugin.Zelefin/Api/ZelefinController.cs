@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
 using Jellyfin.Plugin.Zelefin.Push;
+using MediaBrowser.Controller.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,12 @@ namespace Jellyfin.Plugin.Zelefin.Api;
 public class ZelefinController : ControllerBase
 {
     private readonly NotificationService _notifications;
+    private readonly ISessionManager _sessions;
 
-    public ZelefinController(NotificationService notifications)
+    public ZelefinController(NotificationService notifications, ISessionManager sessions)
     {
         _notifications = notifications;
+        _sessions = sessions;
     }
 
     [HttpGet("config")]
@@ -49,7 +52,13 @@ public class ZelefinController : ControllerBase
             return BadRequest("deviceId must be a UUID");
         }
 
-        var stored = ZelefinPlugin.Instance!.Devices.Upsert(deviceId, userId, body.Token, body.Platform);
+        var stored = ZelefinPlugin.Instance!.Devices.Upsert(
+            deviceId,
+            userId,
+            body.Token,
+            body.Platform,
+            body.SessionId);
+        BindLiveSession(deviceId, body.DeviceId, body.SessionId);
         return new JsonResult(stored);
     }
 
@@ -102,6 +111,27 @@ public class ZelefinController : ControllerBase
 
         var error = await _notifications.SendTestAsync(userId, cancellationToken).ConfigureAwait(false);
         return Ok(new { ok = error is null, error });
+    }
+
+    private void BindLiveSession(Guid deviceId, string? reportedDeviceId, string? reportedSessionId)
+    {
+        var store = ZelefinPlugin.Instance?.Devices;
+        if (store is null)
+        {
+            return;
+        }
+
+        store.RememberSession(reportedSessionId, reportedDeviceId);
+        store.RememberSession(reportedSessionId, deviceId.ToString("D"));
+        foreach (var session in _sessions.Sessions)
+        {
+            if (DisplayMessageWatch.SameId(session.DeviceId, reportedDeviceId)
+                || DisplayMessageWatch.SameId(session.DeviceId, deviceId.ToString("D"))
+                || DisplayMessageWatch.SameId(session.DeviceId, deviceId.ToString("N")))
+            {
+                store.RememberSession(session.Id, deviceId.ToString("D"));
+            }
+        }
     }
 
     private bool TryCurrentUserId(out Guid userId)

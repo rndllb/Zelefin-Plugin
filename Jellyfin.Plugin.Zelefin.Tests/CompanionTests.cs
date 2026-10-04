@@ -307,6 +307,8 @@ public class ApnsJwtTests
         Assert.Contains("\"subtitle\":\"Andor\"", json);
         Assert.Contains("\"itemId\":\"abc\"", json);
         Assert.Contains("\"sound\":\"default\"", json);
+        Assert.Contains("\"type\":\"Episode\"", json);
+        Assert.Contains("\"kind\":\"Episode\"", json);
     }
 
     [Fact]
@@ -349,6 +351,38 @@ public class DeviceStoreTests
             store.Upsert(device, ada, "token-2");
             Assert.Equal(1, store.Count);
             Assert.Equal("token-2", store.All().Single().Token);
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [Fact]
+    public void Remembers_the_session_for_one_device()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "zelefin-tests-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            using var store = new DeviceStore(folder);
+            var ios = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            var android = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+            var user = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            store.Upsert(ios, user, "ios-token", "ios");
+            store.Upsert(android, user, "android-token", "android");
+            store.RememberSession("e6f1969f7bca9cf67fe9dde9a0b0333f", ios.ToString());
+            store.RememberSession("bb2be81c-67d9-da2e-ef42-c5c9e21060b8", android.ToString());
+            store.Upsert(ios, user, "ios-token-rotated", "ios");
+
+            Assert.Equal([ios], store.ForSession("e6f1969f-7bca-9cf6-7fe9-dde9a0b0333f").Select(record => record.DeviceId));
+            Assert.Equal([android], store.ForSession("bb2be81c67d9da2eef42c5c9e21060b8").Select(record => record.DeviceId));
+            Assert.Equal([ios], store.ForDevice(ios).Select(record => record.DeviceId));
+            Assert.Equal("ios-token-rotated", store.ForDevice(ios).Single().Token);
+            Assert.Empty(store.ForSession("ffffffffffffffffffffffffffffffff"));
+            store.RememberSessionUser("e6f1969f7bca9cf67fe9dde9a0b0333f", user);
+            Assert.Equal(user, store.UserForSession("e6f1969f-7bca-9cf6-7fe9-dde9a0b0333f"));
+            Assert.Equal(Guid.Empty, store.UserForSession("ffffffffffffffffffffffffffffffff"));
         }
         finally
         {
@@ -414,6 +448,79 @@ public class EventThrottleTests
         Assert.False(EventThrottle.HasRecentlyProcessed("a", TimeSpan.FromMinutes(1)));
         Assert.True(EventThrottle.HasRecentlyProcessed("a", TimeSpan.FromMinutes(1)));
         Assert.False(EventThrottle.HasRecentlyProcessed("b", TimeSpan.FromMinutes(1)));
+    }
+}
+
+public class DisplayMessageWatchTests
+{
+    [Theory]
+    [InlineData("/Sessions/abc123/Message", "abc123", false)]
+    [InlineData("/Sessions/abc123/Command", "abc123", true)]
+    [InlineData("/jellyfin/Sessions/abc123/Message/", "abc123", false)]
+    public void Matches_session_message_routes(string path, string sessionId, bool isCommand)
+    {
+        Assert.True(DisplayMessageWatch.TryMatchPath(path, out var id, out var command));
+        Assert.Equal(sessionId, id);
+        Assert.Equal(isCommand, command);
+    }
+
+    [Theory]
+    [InlineData("/Sessions")]
+    [InlineData("/Sessions/abc123/Playing")]
+    [InlineData("/Items/abc123")]
+    public void Ignores_other_routes(string path)
+    {
+        Assert.False(DisplayMessageWatch.TryMatchPath(path, out _, out _));
+    }
+
+    [Fact]
+    public void Parses_dashboard_message_body()
+    {
+        Assert.True(DisplayMessageWatch.TryParse(
+            """{"Header":"Zelefin","Text":"Server restart in 5 minutes","TimeoutMs":8000}""",
+            false,
+            out var header,
+            out var text));
+        Assert.Equal("Zelefin", header);
+        Assert.Equal("Server restart in 5 minutes", text);
+    }
+
+    [Fact]
+    public void Parses_general_command_display_message()
+    {
+        Assert.True(DisplayMessageWatch.TryParse(
+            """{"Name":"DisplayMessage","Arguments":{"Header":"Admin","Text":"Hello"}}""",
+            true,
+            out var header,
+            out var text));
+        Assert.Equal("Admin", header);
+        Assert.Equal("Hello", text);
+    }
+
+    [Fact]
+    public void Ignores_other_general_commands()
+    {
+        Assert.False(DisplayMessageWatch.TryParse(
+            """{"Name":"MoveUp","Arguments":{}}""",
+            true,
+            out _,
+            out _));
+    }
+
+    [Fact]
+    public void Push_type_is_session_message()
+    {
+        var message = DisplayMessageWatch.ToPush("Admin", "Hello");
+        Assert.Equal("Admin", message.Title);
+        Assert.Equal("Hello", message.Body);
+        Assert.Equal("sessionMessage", message.Type);
+    }
+
+    [Fact]
+    public void Session_ids_match_with_or_without_dashes()
+    {
+        Assert.True(DisplayMessageWatch.SameId("e6f1969f-7bca-9cf6-7fe9-dde9a0b0333f", "e6f1969f7bca9cf67fe9dde9a0b0333f"));
+        Assert.False(DisplayMessageWatch.SameId("e6f1969f7bca9cf67fe9dde9a0b0333f", "bb2be81c67d9da2eef42c5c9e21060b8"));
     }
 }
 

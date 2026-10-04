@@ -41,6 +41,12 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public bool UserLockedOutEnabled { get; set; } = true;
 
+    /// <summary>
+    /// Push a DisplayMessage to the target user's Zelefin devices when the app is closed.
+    /// Open installs still show the in-app popup over the live WebSocket.
+    /// </summary>
+    public bool DisplayMessageEnabled { get; set; } = true;
+
     public int EventThresholdSeconds { get; set; } = 5;
 
     public string ApnsKeyId { get; set; } = string.Empty;

@@ -49,6 +49,14 @@ public sealed class NotificationService
         return SendAsync(devices, message, cancellationToken);
     }
 
+    public Task SendToDevicesAsync(
+        IReadOnlyList<DeviceRecord> devices,
+        PushMessage message,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsync(devices, message, cancellationToken);
+    }
+
     public async Task<string?> SendTestAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var config = ZelefinPlugin.Instance?.Configuration;

@@ -19,6 +19,7 @@ export default function (view) {
             view.querySelector('#sessionStartedEnabled').checked = config.SessionStartedEnabled !== false;
             view.querySelector('#playbackStartedEnabled').checked = config.PlaybackStartedEnabled !== false;
             view.querySelector('#userLockedOutEnabled').checked = config.UserLockedOutEnabled !== false;
+            view.querySelector('#displayMessageEnabled').checked = config.DisplayMessageEnabled !== false;
             view.querySelector('#eventThresholdSeconds').value = config.EventThresholdSeconds || 5;
             await renderLibraries(view, (config.ItemAddedLibraryIds || '').split(',').map((id) => id.trim()).filter(Boolean));
         } finally {
@@ -56,6 +57,7 @@ export default function (view) {
             config.SessionStartedEnabled = view.querySelector('#sessionStartedEnabled').checked;
             config.PlaybackStartedEnabled = view.querySelector('#playbackStartedEnabled').checked;
             config.UserLockedOutEnabled = view.querySelector('#userLockedOutEnabled').checked;
+            config.DisplayMessageEnabled = view.querySelector('#displayMessageEnabled').checked;
             config.EventThresholdSeconds = Number(view.querySelector('#eventThresholdSeconds').value) || 5;
             return ApiClient.updatePluginConfiguration(pluginId, config);
         }).then(Dashboard.processPluginConfigurationUpdateResult)

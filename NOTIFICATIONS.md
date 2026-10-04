@@ -20,6 +20,7 @@ Built-in events:
 - **Session started** — admins, excluding the user who just connected.
 - **Playback started** — admins, excluding whoever started playback.
 - **User locked out** — admins and the locked user.
+- **User message** — every Zelefin install signed in as that user, including a closed app.
 
 Zelefin registers a device token after sign-in. Alerts leave this server through the publisher relay.
 

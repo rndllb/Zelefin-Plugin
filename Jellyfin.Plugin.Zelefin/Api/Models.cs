@@ -57,5 +57,12 @@ public class DeviceTokenRequest
     /// </summary>
     [JsonPropertyName("platform")]
     public string? Platform { get; set; }
+
+    /// <summary>
+    /// Jellyfin session id for this install, so a later DisplayMessage can
+    /// target this device after the WebSocket is gone.
+    /// </summary>
+    [JsonPropertyName("sessionId")]
+    public string? SessionId { get; set; }
 }
 

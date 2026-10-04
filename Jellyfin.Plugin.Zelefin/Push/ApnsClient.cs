@@ -142,7 +142,8 @@ public sealed class ApnsClient : IDisposable
             ["aps"] = aps,
             ["itemId"] = message.ItemId,
             ["seriesId"] = message.SeriesId,
-            ["type"] = message.Type
+            ["type"] = message.Type,
+            ["kind"] = message.Type
         };
         return JsonSerializer.Serialize(root);
     }

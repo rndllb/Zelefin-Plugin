@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/rndllb/Zelefin-Plugin/main/thumb.png",
     "versions": [
       {
+        "version": "1.2.3.0",
+        "changelog": "User messages: a dashboard DisplayMessage reaches every Zelefin install for that user, including a closed app.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/rndllb/Zelefin-Plugin/releases/download/1.2.3.0/zelefin-1.2.3.0.zip",
+        "checksum": "dd3e889af0f5a4a9dbbe7a3f0c1e2e49",
+        "timestamp": "2026-10-04T00:00:00Z"
+      },
+      {
         "version": "1.1.0.0",
         "changelog": "Android support: Zelefin on Android registers with the plugin and gets the same lock-screen alerts as iPhone and iPad.",
         "targetAbi": "12.0.0.0",

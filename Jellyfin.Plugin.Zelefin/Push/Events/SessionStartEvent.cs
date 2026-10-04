@@ -13,12 +13,17 @@ public sealed class SessionStartEvent : PluginEvent, IEventConsumer<SessionStart
 
     public Task OnEvent(SessionStartedEventArgs? eventArgs)
     {
-        if (eventArgs?.Argument is null || Config is not { SessionStartedEnabled: true })
+        var session = eventArgs?.Argument;
+        if (session is not null)
+        {
+            ZelefinPlugin.Instance?.Devices.RememberSessionUser(session.Id, session.UserId);
+            ZelefinPlugin.Instance?.Devices.RememberSession(session.Id, session.DeviceId);
+        }
+
+        if (session is null || Config is not { SessionStartedEnabled: true })
         {
             return Task.CompletedTask;
         }
-
-        var session = eventArgs.Argument;
         if (Throttled("session:" + session.DeviceId))
         {
             return Task.CompletedTask;
