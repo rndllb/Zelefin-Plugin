@@ -1,7 +1,12 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import http2 from "node:http2";
+import os from "node:os";
+import path from "node:path";
 import express from "express";
+import { embyMessage } from "./emby.js";
+import { HookStore } from "./hooks.js";
+import { siloMessage, verifySiloSignature } from "./silo.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const BUNDLE_ID = (process.env.APNS_BUNDLE_ID || "app.zelefin.client").trim();
@@ -52,6 +57,7 @@ function payloadFor(message) {
     aps: { sound: "default", alert },
     itemId: message.itemId || null,
     seriesId: message.seriesId || null,
+    siloItemId: message.siloItemId || null,
     type: message.type || null,
   });
 }
@@ -178,7 +184,7 @@ async function fcmAuthorization(account) {
 // hands the data keys to the launcher activity as intent extras.
 function fcmMessageFor(token, message) {
   const data = { title: message.title, body: message.body };
-  for (const key of ["subtitle", "itemId", "seriesId", "type"]) {
+  for (const key of ["subtitle", "itemId", "seriesId", "siloItemId", "type"]) {
     if (message[key]) {
       data[key] = message[key];
     }
@@ -239,7 +245,8 @@ async function sendToken(creds, token, message, authorization) {
 
 const app = express();
 app.disable("x-powered-by");
-app.use(express.json({ limit: "256kb" }));
+// Keep the raw bytes too: Silo signs the exact body it sends.
+app.use(express.json({ limit: "256kb", verify: (req, _res, buf) => { req.rawBody = buf; } }));
 
 app.get("/healthz", (_req, res) => {
   const apns = Boolean(credentials());
@@ -281,6 +288,11 @@ app.post("/v1/send", async (req, res) => {
     seriesId: req.body.seriesId ? String(req.body.seriesId).trim() : "",
     type: req.body.type ? String(req.body.type).trim() : "",
   };
+  res.json({ expiredTokens: await deliver(message, tokens, fcmTokens, creds, account) });
+});
+
+/** Sends one message to every token, and returns the tokens Apple or Google reported as no longer valid. */
+async function deliver(message, tokens, fcmTokens, creds, account) {
   const expiredTokens = [];
   if (creds) {
     const authorization = jwtFor(creds);
@@ -315,8 +327,132 @@ app.post("/v1/send", async (req, res) => {
       }
     }
   }
-  res.json({ expiredTokens });
+  return expiredTokens;
+}
+
+// Emby and Silo cannot run the Zelefin plugin, so each phone registers here and gets a private
+// webhook address that the app adds to the user's notifications on that server.
+const DATA_DIR = (process.env.ZELEFIN_PUSH_DATA_DIR || "").trim() || path.join(os.homedir(), ".zelefin-push");
+const PUBLIC_URL = (process.env.PUBLIC_URL || "https://push.zelefin.app").trim().replace(/\/+$/, "");
+
+function hookRegistration(body) {
+  const platform = String(body?.platform || "").trim().toLowerCase();
+  const token = String(body?.token || "").trim();
+  if ((platform !== "ios" && platform !== "android") || !token || token.length > 4096) {
+    return null;
+  }
+  const registration = { platform, token };
+  if (body?.label !== undefined) {
+    registration.label = String(body.label).trim().slice(0, 60);
+  }
+  if (body?.signingSecret !== undefined) {
+    registration.signingSecret = String(body.signingSecret).trim().slice(0, 512);
+  }
+  return registration;
+}
+
+/** Register, update, and forget routes for one server type, under `/<name>/v1/hooks`. */
+function hookRoutes(name, store) {
+  app.post(`/${name}/v1/hooks`, (req, res) => {
+    const registration = hookRegistration(req.body);
+    if (!registration) {
+      res.status(400).json({ error: "platform (ios or android) and token are required" });
+      return;
+    }
+    const hookId = store.create(registration);
+    if (!hookId) {
+      res.status(503).json({ error: "The push service could not save this phone" });
+      return;
+    }
+    res.status(201).json({ hookId, url: `${PUBLIC_URL}/${name}/v1/hook/${hookId}` });
+  });
+
+  app.put(`/${name}/v1/hooks/:hookId`, (req, res) => {
+    const registration = hookRegistration(req.body);
+    if (!registration) {
+      res.status(400).json({ error: "platform (ios or android) and token are required" });
+      return;
+    }
+    if (!store.update(req.params.hookId, registration)) {
+      res.status(404).json({ error: "Unknown hook" });
+      return;
+    }
+    res.json({ ok: true });
+  });
+
+  app.delete(`/${name}/v1/hooks/:hookId`, (req, res) => {
+    store.remove(req.params.hookId);
+    res.status(204).end();
+  });
+}
+
+/** Sends one hook's alert, and forgets the hook when Apple or Google says the phone is gone. */
+async function sendHook(store, hookId, hook, message, res) {
+  if (!message || !store.allow(hookId)) {
+    res.status(202).json({ sent: false });
+    return;
+  }
+  const ios = hook.platform === "ios";
+  const creds = ios ? credentials() : null;
+  const account = ios ? null : fcmAccount();
+  if (!creds && !account) {
+    console.warn(`${message.type || "hook"}: ${ios ? "APNs" : "Firebase"} is not configured`);
+    res.status(503).json({ error: ios ? "APNs is not configured" : "Firebase is not configured" });
+    return;
+  }
+  const expired = await deliver(message, ios ? [hook.token] : [], ios ? [] : [hook.token], creds, account);
+  if (expired.length > 0) {
+    store.remove(hookId);
+  }
+  res.json({ sent: expired.length === 0 });
+}
+
+const embyHooks = new HookStore(path.join(DATA_DIR, "emby-hooks.json"));
+const siloHooks = new HookStore(path.join(DATA_DIR, "silo-hooks.json"));
+hookRoutes("emby", embyHooks);
+hookRoutes("silo", siloHooks);
+
+// Emby posts JSON, or multipart with the JSON in a "data" field when that request type is picked.
+app.post("/emby/v1/hook/:hookId", express.text({ type: ["multipart/*", "text/*"], limit: "512kb" }), async (req, res) => {
+  const hook = embyHooks.get(req.params.hookId);
+  if (!hook) {
+    res.status(404).json({ error: "Unknown hook" });
+    return;
+  }
+  const event = embyEvent(req);
+  await sendHook(embyHooks, req.params.hookId, hook, event && embyMessage(event), res);
 });
+
+// Silo signs every delivery; until the app hands over the signing secret, the hook sends nothing.
+app.post("/silo/v1/hook/:hookId", async (req, res) => {
+  const hook = siloHooks.get(req.params.hookId);
+  if (!hook) {
+    res.status(404).json({ error: "Unknown hook" });
+    return;
+  }
+  if (!verifySiloSignature(hook.signingSecret, req.get("X-Silo-Signature"), req.rawBody)) {
+    res.status(401).json({ error: "Signature did not match" });
+    return;
+  }
+  await sendHook(siloHooks, req.params.hookId, hook, siloMessage(req.body, hook.label), res);
+});
+
+function embyEvent(req) {
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+    return req.body;
+  }
+  const text = typeof req.body === "string" ? req.body : "";
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) {
+    return null;
+  }
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`zelefin-push on ${PORT} apns=${Boolean(credentials())} fcm=${Boolean(fcmAccount())}`);
