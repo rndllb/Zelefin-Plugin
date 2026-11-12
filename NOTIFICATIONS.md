@@ -14,6 +14,8 @@ The plugin posts device tokens to Zelefin’s push service (`https://push.zelefi
 
 After that you only touch the notification toggles.
 
+The server still sends each push. On the device, Zelefin can mute banners while the app is open, while a title is playing, and during quiet hours. Those switches are in the app’s device settings. A closed app still receives the alert on the lock screen outside quiet hours.
+
 Built-in events:
 
 - **Item added** — every Zelefin user. Movies send immediately. Episodes from the same season that arrive within the grouping window become one alert.

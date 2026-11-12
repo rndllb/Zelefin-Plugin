@@ -10,7 +10,7 @@ The server is the source of truth. The app does not ask each user to wire plugin
 
 - **Seerr** — Dashboard → Plugins → Zelefin. Paste the Seerr URL and API key (Seerr → Settings → General). Zelefin signs each user in automatically.
 - **Intro Skipper defaults** — Optional auto-skip for intros and credits, with a lock so devices cannot override them.
-- **Push notifications** — Item added (movies and grouped episodes), session started (admins), playback started (admins), user locked out, plus a webhook for Seerr or the Jellyfin webhook plugin. Alerts go through [Zelefin’s push service](https://push.zelefin.app); you never paste an Apple key or Firebase credentials.
+- **Push notifications** — Item added (movies and grouped episodes), session started (admins), playback started (admins), user locked out, plus a webhook for Seerr or the Jellyfin webhook plugin. Alerts go through [Zelefin’s push service](https://push.zelefin.app); you never paste an Apple key or Firebase credentials. The server still sends each push. Zelefin can mute the banner while the app is open, while a title is playing, and during quiet hours (device settings).
 
 Requires Jellyfin 12 / .NET 10.
 

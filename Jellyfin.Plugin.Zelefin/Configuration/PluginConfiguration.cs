@@ -42,8 +42,10 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool UserLockedOutEnabled { get; set; } = true;
 
     /// <summary>
-    /// Push a DisplayMessage to the target user's Zelefin devices when the app is closed.
-    /// Open installs still show the in-app popup over the live WebSocket.
+    /// Push a DisplayMessage to the target user's Zelefin devices. The server still sends
+    /// the push while the app is open. The app can mute the banner while it is open, while
+    /// it is playing, and during quiet hours. Open installs also show the in-app popup
+    /// over the live WebSocket.
     /// </summary>
     public bool DisplayMessageEnabled { get; set; } = true;
 

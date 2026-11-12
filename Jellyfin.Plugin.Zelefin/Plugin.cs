@@ -28,7 +28,7 @@ public class ZelefinPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public override string Name => "Zelefin";
 
     public override string Description =>
-        "Pushes Seerr and skip settings to Zelefin, and sends iOS and Android notifications when new titles arrive or a user message is sent while the app is closed.";
+        "Pushes Seerr and skip settings to Zelefin, and sends iOS and Android notifications when new titles arrive or a user message is sent. Zelefin can mute banners while the app is open, while it is playing, and during quiet hours.";
 
     public override Guid Id => PluginGuid;
 

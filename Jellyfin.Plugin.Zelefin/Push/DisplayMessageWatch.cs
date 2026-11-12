@@ -5,8 +5,10 @@ using Jellyfin.Plugin.Zelefin.Api;
 namespace Jellyfin.Plugin.Zelefin.Push;
 
 /// <summary>
-/// Parses Jellyfin session Message/Command POSTs so a closed Zelefin install
-/// can still get the lock-screen push. Live WebSocket delivery stays with the app.
+/// Parses Jellyfin session Message/Command POSTs so a Zelefin install still gets
+/// the push, including when the app is closed. The app can mute the banner while
+/// it is open, while it is playing, and during quiet hours. Live WebSocket
+/// delivery stays with the app.
 /// </summary>
 public static class DisplayMessageWatch
 {
